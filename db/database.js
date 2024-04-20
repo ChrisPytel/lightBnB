@@ -10,7 +10,8 @@ const pool = new Pool({
 });
 
 // the following assumes that you named your connection variable `pool`
-pool.query(`SELECT title FROM properties LIMIT 10;`).then(response => {console.log("We've got a SQL response!\n", response.rows)});
+// pool.query(`SELECT title FROM properties LIMIT 10;`)
+// .then(response => {console.log("We've got a SQL response!\n", response.rows)});
 
 
 /// Users
@@ -72,11 +73,23 @@ const getAllReservations = function (guest_id, limit = 10) {
  * @return {Promise<[{}]>}  A promise to the properties.
  */
 const getAllProperties = function (options, limit = 10) {
-  const limitedProperties = {};
-  for (let i = 1; i <= limit; i++) {
-    limitedProperties[i] = properties[i];
-  }
-  return Promise.resolve(limitedProperties);
+
+  return pool
+  .query(`SELECT * FROM properties LIMIT $1`, [limit])
+  .then((result) => {
+    console.log("Database returns the following data:\n", result.rows);
+    return result.rows;
+  })
+  .catch((err) => {
+    console.error("We've got an error!", err.message);
+  });
+
+//-------------original code-----------
+  // const limitedProperties = {};
+  // for (let i = 1; i <= limit; i++) {
+  //   limitedProperties[i] = properties[i];
+  // }
+  // return Promise.resolve(limitedProperties);
 };
 
 /**
