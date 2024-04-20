@@ -22,14 +22,29 @@ const pool = new Pool({
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function (email) {
-  let resolvedUser = null;
-  for (const userId in users) {
-    const user = users[userId];
-    if (user && user.email.toLowerCase() === email.toLowerCase()) {
-      resolvedUser = user;
-    }
-  }
-  return Promise.resolve(resolvedUser);
+
+  return pool
+  .query(`SELECT *
+          FROM users
+          WHERE email = $1`
+          ,[email])
+  .then((result) => {
+    console.log("Database returns the following data:\n", result.rows[0]);
+    return result.rows[0];
+  })
+  .catch((err) => {
+    console.error("⛔ SQL encountered an error:\n", err.message);
+  });
+
+//------------- original in-memory code -----------
+  // let resolvedUser = null;
+  // for (const userId in users) {
+  //   const user = users[userId];
+  //   if (user && user.email.toLowerCase() === email.toLowerCase()) {
+  //     resolvedUser = user;
+  //   }
+  // }
+  // return Promise.resolve(resolvedUser);
 };
 
 /**
@@ -81,10 +96,10 @@ const getAllProperties = function (options, limit = 10) {
     return result.rows;
   })
   .catch((err) => {
-    console.error("We've got an error!", err.message);
+    console.error("⛔ SQL encountered an error:\n", err.message);
   });
 
-//-------------original code-----------
+//------------- original in-memory code -----------
   // const limitedProperties = {};
   // for (let i = 1; i <= limit; i++) {
   //   limitedProperties[i] = properties[i];
