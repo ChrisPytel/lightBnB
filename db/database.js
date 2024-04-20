@@ -29,7 +29,7 @@ const getUserWithEmail = function (email) {
           WHERE email = $1`
           ,[email])
   .then((result) => {
-    console.log("Database returns the following data:\n", result.rows[0]);
+    console.log("getUserWithEmail SQL query returns the following data:\n", result.rows[0]);
     return result.rows[0];
   })
   .catch((err) => {
@@ -53,6 +53,20 @@ const getUserWithEmail = function (email) {
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithId = function (id) {
+  return pool
+  .query(`SELECT *
+          FROM users
+          WHERE id = $1`
+          ,[id])
+  .then((result) => {
+    console.log("getUserWithId SQL query returns the following data:\n", result.rows[0]);
+    return result.rows[0];
+  })
+  .catch((err) => {
+    console.error("⛔ SQL encountered an error:\n", err.message);
+  });
+
+//------------- original in-memory code -----------
   return Promise.resolve(users[id]);
 };
 
