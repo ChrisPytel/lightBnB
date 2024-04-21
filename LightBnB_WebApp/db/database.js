@@ -195,6 +195,7 @@ const getAllProperties = function (options, limit = 10) {
   // Adds how many results should be returned
   queryParams.push(limit);
   queryString += ` 
+  ORDER BY cost_per_night
   LIMIT $${queryParams.length};`;
 
   console.log(`Our final constructed query is:\n`, queryString);
