@@ -122,7 +122,8 @@ const getAllReservations = function (guest_id, limit = 10) {
           FROM reservations
           JOIN properties ON properties.id = reservations.property_id
           JOIN property_reviews ON properties.id = property_reviews.property_id 
-          WHERE reservations.guest_id = $1
+          WHERE reservations.guest_id = $1 
+            AND reservations.end_date < now()::date
           GROUP BY properties.id, reservations.id
           ORDER BY reservations.start_date
           LIMIT $2`, 
@@ -148,15 +149,66 @@ const getAllReservations = function (guest_id, limit = 10) {
  * @return {Promise<[{}]>}  A promise to the properties.
  */
 const getAllProperties = function (options, limit = 10) {
+  console.log(`Our search options are:\n`, options);
+
+  //Defines our initial SQL query string to construct 
+  //and initialize array of params to pass to our pool.query after search term results are appended
+  const queryParams = [];
+  let queryString = `
+  SELECT properties.*, avg(property_reviews.rating) as average_rating
+  FROM properties
+  JOIN property_reviews ON properties.id = property_id
+  WHERE 1=1`;
+
+  // If city has been specified in search, appends the entry to array and query
+  if (options.city) {
+    queryParams.push(`%${options.city}%`);
+    queryString += ` 
+    AND city LIKE $${queryParams.length}`;
+  }
+
+  // If the MIN price has been specified in search, appends the entry to array and query
+  if (options.minimum_price_per_night) {
+    queryParams.push(options.minimum_price_per_night * 100);
+    queryString += ` 
+    AND cost_per_night >= $${queryParams.length}`;
+  }
+
+  // If the MAX price has been specified in search, appends the entry to array and query
+  if (options.maximum_price_per_night) {
+    queryParams.push(options.maximum_price_per_night * 100);
+    queryString += ` 
+    AND cost_per_night <= $${queryParams.length}`;    
+  }
+
+  //GROUP BY clause required before any HAVING clauses
+  queryString += ` 
+  GROUP BY properties.id`;
+
+  // If the minimum rating  has been specified in search, appends the entry to array and the query
+  if (options.minimum_rating) {
+    queryParams.push(options.minimum_rating);
+    queryString += ` 
+    HAVING avg(property_reviews.rating) >= $${queryParams.length}`;
+  }
+
+  // Adds how many results should be returned
+  queryParams.push(limit);
+  queryString += ` 
+  LIMIT $${queryParams.length};`;
+
+  console.log(`Our final constructed query is:\n`, queryString);
+  console.log(`Corresponding parameters are:\n`, queryParams);
+
   return pool
-  .query(`SELECT * FROM properties LIMIT $1`, [limit])
+  .query(queryString, queryParams)
   .then((result) => {
-    console.log("getAllProperties query returns Data sucesfully!");
-    // console.log("Got the following data:\n", result.rows);
+    console.log(`getAllProperties query returns Data sucesfully!\nRendering ${result.rows.length} property listings!`);
     return result.rows;
   })
   .catch((err) => {
-    console.error("⛔ SQL encountered an error:\n", err.message);
+    console.error("⛔ getAllProperties query encountered an error:\n", err.message);
+    return;
   });
 
 //------------- original in-memory code -----------
