@@ -103,8 +103,21 @@ const addUser = function (user) {
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
-const getAllReservations = function (guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+const getAllReservations = function (guest_id, limit = 10) { 
+  return pool
+  .query(`SELECT * 
+  FROM properties LIMIT $1`, [limit])
+
+  .then((result) => {
+    console.log("addUser SQL INSERT query returns the following data:\n", result.rows[0]);
+    return result.rows[0];
+  })
+  .catch((err) => {
+    console.log("⛔ SQL encountered an error:\n", err.message);
+  });
+
+  //------------- original in-memory code -----------
+  // return getAllProperties(null, 2);
 };
 
 /// Properties
@@ -116,11 +129,10 @@ const getAllReservations = function (guest_id, limit = 10) {
  * @return {Promise<[{}]>}  A promise to the properties.
  */
 const getAllProperties = function (options, limit = 10) {
-
   return pool
   .query(`SELECT * FROM properties LIMIT $1`, [limit])
   .then((result) => {
-    console.log("Database returns the following data:\n", result.rows);
+    console.log("getAllProperties query returns the following data:\n", result.rows);
     return result.rows;
   })
   .catch((err) => {
