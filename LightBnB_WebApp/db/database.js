@@ -160,6 +160,14 @@ const getAllProperties = function (options, limit = 10) {
   JOIN property_reviews ON properties.id = property_id
   WHERE 1=1`;
 
+  // Sometimes object may have an owner_id property in passed in 
+  // (When user is logged in and clicks "My Listings")
+  if (options.owner_id) {
+    queryParams.push(`${options.owner_id}`);
+    queryString += `AND owner_id = $${queryParams.length}\n`;
+  }
+  
+
   // If city has been specified in search, appends the entry to array and query
   if (options.city) {
     queryParams.push(`%${options.city}%`);
