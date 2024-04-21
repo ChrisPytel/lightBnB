@@ -104,19 +104,38 @@ const addUser = function (user) {
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function (guest_id, limit = 10) { 
-  return pool
-  .query(`SELECT * 
-  FROM properties LIMIT $1`, [limit])
 
+// Initial query from LightBnB Select 
+  // SELECT reservations.id, properties.title, properties.cost_per_night,
+  //          reservations.start_date, AVG(rating) as average_rating
+  //   FROM reservations
+  //     JOIN properties ON properties.id = reservations.property_id
+  //     JOIN property_reviews ON properties.id = property_reviews.property_id 
+  //   WHERE reservations.guest_id = $1
+  //   GROUP BY properties.id, reservations.id
+  //   ORDER BY reservations.start_date
+  //   LIMIT $2   
+
+  return pool
+  .query(`SELECT reservations.id, properties.title, properties.cost_per_night,
+          reservations.start_date, AVG(rating) as average_rating
+          FROM reservations
+          JOIN properties ON properties.id = reservations.property_id
+          JOIN property_reviews ON properties.id = property_reviews.property_id 
+          WHERE reservations.guest_id = $1
+          GROUP BY properties.id, reservations.id
+          ORDER BY reservations.start_date
+          LIMIT $2`, 
+          [guest_id, limit])
   .then((result) => {
-    console.log("addUser SQL INSERT query returns the following data:\n", result.rows[0]);
-    return result.rows[0];
+    console.log("getAllReservations SQL query returns the following data:\n", result.rows);
+    return result.rows;
   })
   .catch((err) => {
     console.log("⛔ SQL encountered an error:\n", err.message);
   });
 
-  //------------- original in-memory code -----------
+//------------- original in-memory code -----------
   // return getAllProperties(null, 2);
 };
 
@@ -132,7 +151,8 @@ const getAllProperties = function (options, limit = 10) {
   return pool
   .query(`SELECT * FROM properties LIMIT $1`, [limit])
   .then((result) => {
-    console.log("getAllProperties query returns the following data:\n", result.rows);
+    console.log("getAllProperties query returns Data sucesfully!");
+    // console.log("Got the following data:\n", result.rows);
     return result.rows;
   })
   .catch((err) => {
