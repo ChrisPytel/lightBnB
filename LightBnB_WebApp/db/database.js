@@ -1,50 +1,35 @@
-const properties = require("./json/properties.json");
-const users = require("./json/users.json");
-const { Pool } = require("pg");    //add postgres module for database connectivity
+//const properties = require("./json/properties.json");
+//const users = require("./json/users.json");
 
-const pool = new Pool({
+// ^ Refactored out since we're using database queries now
+// Ideally would also remove them from the project directory, but thats not a requirement for submission
+
+const { Pool } = require("pg");    //add postgres module for database connectivity
+const pool = new Pool({            //defines database connection variables
   user: "development",
   password: "development",
   host: "localhost",
   database: "lightbnb",
 });
 
-// the following assumes that you named your connection variable `pool`
-// pool.query(`SELECT title FROM properties LIMIT 10;`)
-// .then(response => {console.log("We've got a SQL response!\n", response.rows)});
-
-
 /// Users
-
 /**
  * Get a single user from the database given their email.
  * @param {String} email The email of the user.
  * @return {Promise<{}>} A promise to the user.
  */
-const getUserWithEmail = function (email) {
-
+const getUserWithEmail = function(email) {
   return pool
-  .query(`SELECT *
+    .query(`SELECT *
           FROM users
           WHERE email = $1`
-          ,[email])
-  .then((result) => {
-    console.log("getUserWithEmail SQL query returns the following data:\n", result.rows[0]);
-    return result.rows[0];
-  })
-  .catch((err) => {
-    console.error("⛔ SQL encountered an error:\n", err.message);
-  });
-
-//------------- original in-memory code -----------
-  // let resolvedUser = null;
-  // for (const userId in users) {
-  //   const user = users[userId];
-  //   if (user && user.email.toLowerCase() === email.toLowerCase()) {
-  //     resolvedUser = user;
-  //   }
-  // }
-  // return Promise.resolve(resolvedUser);
+    ,[email])
+    .then((result) => {
+      return result.rows[0];
+    })
+    .catch((err) => {
+      console.error("Database query error:\n", err.message);
+    });
 };
 
 /**
@@ -52,22 +37,18 @@ const getUserWithEmail = function (email) {
  * @param {string} id The id of the user.
  * @return {Promise<{}>} A promise to the user.
  */
-const getUserWithId = function (id) {  
+const getUserWithId = function(id) {
   return pool
-  .query(`SELECT *
+    .query(`SELECT *
           FROM users
           WHERE id = $1`,
-          [id])
-  .then((result) => {
-    console.log("getUserWithId SQL query returns the following data:\n", result.rows[0]);
-    return result.rows[0];
-  })
-  .catch((err) => {
-    console.error("⛔ SQL encountered an error:\n", err.message);
-  });
-
-//------------- original in-memory code -----------
-  // return Promise.resolve(users[id]);
+    [id])
+    .then((result) => {
+      return result.rows[0];
+    })
+    .catch((err) => {
+      console.error("Database query error:\n", err.message);
+    });
 };
 
 /**
@@ -75,49 +56,30 @@ const getUserWithId = function (id) {
  * @param {{name: string, password: string, email: string}} user
  * @return {Promise<{}>} A promise to the user.
  */
-const addUser = function (user) {
+const addUser = function(user) {
   return pool
     .query(`INSERT INTO users 
             (name, email, password)
             VALUES ($1, $2, $3) RETURNING *;`,
-            [user.name, user.email, user.password])
+    [user.name, user.email, user.password])
     .then((result) => {
-      console.log("addUser SQL INSERT query returns the following data:\n", result.rows[0]);
       return result.rows[0];
     })
     .catch((err) => {
-      console.log("⛔ SQL encountered an error:\n", err.message);
+      console.error("Database query error:\n", err.message);
     });
-
-//------------- original in-memory code -----------
-  // const userId = Object.keys(users).length + 1;
-  // user.id = userId;
-  // users[userId] = user;
-  // return Promise.resolve(user);
 };
 
 /// Reservations
 
 /**
  * Get all reservations for a single user.
- * @param {string} guest_id The id of the user.
+ * @param {string} guestId The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
-const getAllReservations = function (guest_id, limit = 10) { 
-
-// Initial query from LightBnB Select 
-  // SELECT reservations.id, properties.title, properties.cost_per_night,
-  //          reservations.start_date, AVG(rating) as average_rating
-  //   FROM reservations
-  //     JOIN properties ON properties.id = reservations.property_id
-  //     JOIN property_reviews ON properties.id = property_reviews.property_id 
-  //   WHERE reservations.guest_id = $1
-  //   GROUP BY properties.id, reservations.id
-  //   ORDER BY reservations.start_date
-  //   LIMIT $2   
-
+const getAllReservations = function(guestId, limit = 10) {
   return pool
-  .query(`SELECT reservations.id, properties.title, properties.cost_per_night,
+    .query(`SELECT reservations.id, properties.title, properties.cost_per_night,
           reservations.start_date, AVG(rating) as average_rating
           FROM reservations
           JOIN properties ON properties.id = reservations.property_id
@@ -126,18 +88,14 @@ const getAllReservations = function (guest_id, limit = 10) {
             AND reservations.end_date < now()::date
           GROUP BY properties.id, reservations.id
           ORDER BY reservations.start_date
-          LIMIT $2`, 
-          [guest_id, limit])
-  .then((result) => {
-    console.log("getAllReservations SQL query returns the following data:\n", result.rows);
-    return result.rows;
-  })
-  .catch((err) => {
-    console.log("⛔ SQL encountered an error:\n", err.message);
-  });
-
-//------------- original in-memory code -----------
-  // return getAllProperties(null, 2);
+          LIMIT $2`,
+    [guestId, limit])
+    .then((result) => {
+      return result.rows;
+    })
+    .catch((err) => {
+      console.error("Database query error:\n", err.message);
+    });
 };
 
 /// Properties
@@ -149,104 +107,81 @@ const getAllReservations = function (guest_id, limit = 10) {
  * @return {Promise<[{}]>}  A promise to the properties.
  */
 
-const getAllProperties = function (options, limit = 10) {
-  console.log(`Our search options are:\n`, options);
-  getAllProperties.timesRan ++; 
-  console.log(`getAllProperties.timesRan is: `, getAllProperties.timesRan);
-  
-  //Defines our initial SQL query string to construct 
-  //and initialize array of params to pass to our pool.query after search term results are appended
+const getAllProperties = function(options, limit = 10) {
+  // Initialize array of parameters to pass to our pool.query after search term results are appended
   const queryParams = [];
+  // Defines our initial SQL query string to construct
   let queryString = `
   SELECT properties.*, avg(property_reviews.rating) as average_rating
   FROM properties
   JOIN property_reviews ON properties.id = property_id
   WHERE 1=1`;
 
-  // Sometimes object may have an owner_id property in passed in 
-  // (When user is logged in and clicks "My Listings")
+  // Sometimes object may have an owner_id property in passed in,
+  // Such as when user is logged in and clicks "My Listings"
   if (options.owner_id) {
     queryParams.push(`${options.owner_id}`);
     queryString += `AND owner_id = $${queryParams.length}\n`;
   }
-  
   // If city has been specified in search, appends the entry to array and query
   if (options.city) {
     queryParams.push(`%${options.city}%`);
     queryString += ` 
     AND city LIKE $${queryParams.length}`;
   }
-
-  // If the MIN price has been specified in search, appends the entry to array and query
+  // If the MIN price has been specified in search
   if (options.minimum_price_per_night) {
     queryParams.push(options.minimum_price_per_night * 100); // converts dollar value to cents to store in our DB
     queryString += ` 
     AND cost_per_night >= $${queryParams.length}`;
   }
-
-  // If the MAX price has been specified in search, appends the entry to array and query
+  // If the MAX price has been specified in search
   if (options.maximum_price_per_night) {
     queryParams.push(options.maximum_price_per_night * 100); // converts dollar value to cents to store in our DB
     queryString += ` 
-    AND cost_per_night <= $${queryParams.length}`;    
+    AND cost_per_night <= $${queryParams.length}`;
   }
 
   //GROUP BY clause required before any HAVING clauses
   queryString += ` 
   GROUP BY properties.id`;
 
-  // If the minimum rating  has been specified in search, appends the entry to array and the query
+  // If the minimum rating has been specified in search
   if (options.minimum_rating) {
     queryParams.push(options.minimum_rating);
     queryString += ` 
     HAVING avg(property_reviews.rating) >= $${queryParams.length}`;
   }
-
-  // Adds how many results should be returned
+  // Always adds LIMIT of how many results should be returned
   queryParams.push(limit);
   queryString += ` 
   ORDER BY cost_per_night
   LIMIT $${queryParams.length};`;
 
-  console.log(`Our final constructed query is:`, queryString);
-  console.log(`Corresponding parameters are:\n`, queryParams);
-
   return pool
-  .query(queryString, queryParams)
-  .then((result) => {
-    console.log(`getAllProperties query returns Data sucesfully!\nRendering ${result.rows.length} property listings!`);
-    return result.rows;
-  })
-  .catch((err) => {
-    console.error("⛔ getAllProperties query encountered an error:\n", err.message);
-    return;
-  });
-
-//------------- original in-memory code -----------
-  // const limitedProperties = {};
-  // for (let i = 1; i <= limit; i++) {
-  //   limitedProperties[i] = properties[i];
-  // }
-  // return Promise.resolve(limitedProperties);
+    .query(queryString, queryParams)
+    .then((result) => {
+      return result.rows;
+    })
+    .catch((err) => {
+      console.error("⛔ getAllProperties query encountered an error:\n", err.message);
+      return;
+    });
 };
-
-getAllProperties.timesRan = 0; //For debugging and checking how many times items page was reloaded
 
 /**
  * Add a property to the database
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
  */
-const addProperty = function (property) {
-  console.log(`Our property is: `, property);
-
+const addProperty = function(property) {
+  //Performs a check if a user inputs a negative value into these search fields
   if (property.cost_per_night < 0 ||
     property.parking_spaces < 0  ||
     property.number_of_bathrooms < 0 ||
-    property.number_of_bedrooms < 0){
+    property.number_of_bedrooms < 0) {
     throw new Error('Cannot input a negative value');
   }
-
   return pool
     .query(`
     INSERT INTO properties
@@ -256,23 +191,17 @@ const addProperty = function (property) {
     country, street, city, province, post_code)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     RETURNING *;`,
-      [property.owner_id, property.title, property.description,
-        property.thumbnail_photo_url, property.cover_photo_url,
-        property.cost_per_night, property.parking_spaces, property.number_of_bathrooms, property.number_of_bedrooms,
-        property.country, property.street, property.city, property.province, property.post_code])
+    [property.owner_id, property.title, property.description,
+      property.thumbnail_photo_url, property.cover_photo_url,
+      property.cost_per_night, property.parking_spaces, property.number_of_bathrooms, property.number_of_bedrooms,
+      property.country, property.street, property.city, property.province, property.post_code])
     .then((result) => {
-      console.log(`addProperty query constructs database entry sucesfully!\n`, result.rows[0]);
       return result.rows;
     })
     .catch((err) => {
       console.error("⛔ addProperty query encountered an error:\n", err.message);
       return;
-  });
-//------------- original in-memory code -----------  
-  // const propertyId = Object.keys(properties).length + 1;
-  // property.id = propertyId;
-  // properties[propertyId] = property;
-  // return Promise.resolve(property);
+    });
 };
 
 module.exports = {
