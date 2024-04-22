@@ -179,14 +179,14 @@ const getAllProperties = function (options, limit = 10) {
 
   // If the MIN price has been specified in search, appends the entry to array and query
   if (options.minimum_price_per_night) {
-    queryParams.push(options.minimum_price_per_night * 100);
+    queryParams.push(options.minimum_price_per_night * 100); // converts dollar value to cents to store in our DB
     queryString += ` 
     AND cost_per_night >= $${queryParams.length}`;
   }
 
   // If the MAX price has been specified in search, appends the entry to array and query
   if (options.maximum_price_per_night) {
-    queryParams.push(options.maximum_price_per_night * 100);
+    queryParams.push(options.maximum_price_per_night * 100); // converts dollar value to cents to store in our DB
     queryString += ` 
     AND cost_per_night <= $${queryParams.length}`;    
   }
@@ -262,7 +262,7 @@ const addProperty = function (property) {
         property.country, property.street, property.city, property.province, property.post_code])
     .then((result) => {
       console.log(`addProperty query constructs database entry sucesfully!\n`, result.rows[0]);
-      return;
+      return result.rows;
     })
     .catch((err) => {
       console.error("⛔ addProperty query encountered an error:\n", err.message);
