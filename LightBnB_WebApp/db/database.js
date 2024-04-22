@@ -148,9 +148,12 @@ const getAllReservations = function (guest_id, limit = 10) {
  * @param {*} limit The number of results to return.
  * @return {Promise<[{}]>}  A promise to the properties.
  */
+
 const getAllProperties = function (options, limit = 10) {
   console.log(`Our search options are:\n`, options);
-
+  getAllProperties.timesRan ++; 
+  console.log(`getAllProperties.timesRan is: `, getAllProperties.timesRan);
+  
   //Defines our initial SQL query string to construct 
   //and initialize array of params to pass to our pool.query after search term results are appended
   const queryParams = [];
@@ -167,7 +170,6 @@ const getAllProperties = function (options, limit = 10) {
     queryString += `AND owner_id = $${queryParams.length}\n`;
   }
   
-
   // If city has been specified in search, appends the entry to array and query
   if (options.city) {
     queryParams.push(`%${options.city}%`);
@@ -206,7 +208,7 @@ const getAllProperties = function (options, limit = 10) {
   ORDER BY cost_per_night
   LIMIT $${queryParams.length};`;
 
-  console.log(`Our final constructed query is:\n`, queryString);
+  console.log(`Our final constructed query is:`, queryString);
   console.log(`Corresponding parameters are:\n`, queryParams);
 
   return pool
@@ -228,16 +230,22 @@ const getAllProperties = function (options, limit = 10) {
   // return Promise.resolve(limitedProperties);
 };
 
+getAllProperties.timesRan = 0; //For debugging and checking how many times items page was reloaded
+
 /**
  * Add a property to the database
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function (property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+console.log(`Our property is: `, property);
+
+
+//------------- original in-memory code -----------  
+  // const propertyId = Object.keys(properties).length + 1;
+  // property.id = propertyId;
+  // properties[propertyId] = property;
+  // return Promise.resolve(property);
 };
 
 module.exports = {
