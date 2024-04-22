@@ -240,6 +240,13 @@ getAllProperties.timesRan = 0; //For debugging and checking how many times items
 const addProperty = function (property) {
   console.log(`Our property is: `, property);
 
+  if (property.cost_per_night < 0 ||
+    property.parking_spaces < 0  ||
+    property.number_of_bathrooms < 0 ||
+    property.number_of_bedrooms < 0){
+    throw new Error('Cannot input a negative value');
+  }
+
   return pool
     .query(`
     INSERT INTO properties
