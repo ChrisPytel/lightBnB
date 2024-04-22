@@ -9,7 +9,7 @@
     "start": "node server"
   },
   "keywords": [],
-  "author": "",
+  "author": "Christopher Pytel",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^3.0.6",
